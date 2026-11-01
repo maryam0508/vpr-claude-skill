@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VPR Workflow - Verified Paper Research</title>
+  <title>VPR Queue Mode - Verified Paper Research</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -102,7 +102,7 @@
     .desc {
       font-size: 17px;
       color: var(--text-muted);
-      max-width: 720px;
+      max-width: 760px;
       line-height: 1.6;
     }
 
@@ -124,13 +124,44 @@
       text-underline-offset: 4px;
     }
 
+    /* Pillars */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 48px;
+    }
+
+    .pillar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+    }
+
+    .pillar-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pillar-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
     /* Workflow Flowchart Section */
     .workflow-section {
-      margin-bottom: 64px;
+      margin-bottom: 56px;
     }
 
     .section-head {
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .section-title {
@@ -156,7 +187,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 24px;
+      padding: 22px 24px;
       position: relative;
       transition: all 0.2s ease;
       cursor: pointer;
@@ -248,13 +279,13 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 44px;
+      height: 38px;
       position: relative;
     }
 
     .arrow-line {
       width: 2px;
-      height: 24px;
+      height: 20px;
       background: var(--border);
     }
 
@@ -266,13 +297,74 @@
       border-top: 7px solid var(--border);
     }
 
+    /* Reconciliation Table Section */
+    .table-section {
+      margin-bottom: 56px;
+    }
+
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--surface-subtle);
+      padding: 12px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .badge-valid {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .badge-failed {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .badge-pending {
+      background: #f4f4f5;
+      color: #71717a;
+    }
+
     /* Claude Skill Reference Box */
     .skill-box {
       background: var(--surface-subtle);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 24px;
-      margin-bottom: 64px;
+      margin-bottom: 56px;
     }
 
     .skill-box h3 {
@@ -284,7 +376,7 @@
     .skill-box p {
       font-size: 14px;
       color: var(--text-muted);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     pre {
@@ -293,8 +385,9 @@
       padding: 14px 16px;
       border-radius: 4px;
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 12px;
       overflow-x: auto;
+      margin-bottom: 14px;
     }
 
     /* Footer */
@@ -341,25 +434,41 @@
       <div class="masthead">
         <div class="pill-row">
           <span class="tag">Spesifikasi Skill</span>
-          <span class="tag tag-accent">Verified Paper Research</span>
+          <span class="tag tag-accent">VPR Queue Mode v2</span>
           <span class="tag">Claude AI</span>
         </div>
-        <h1>Alur Kerja Penelusuran dan Validasi Ilmiah</h1>
+        <h1>Verified Paper Research: Queue Mode</h1>
         <p class="desc">
-          Protokol sistematis untuk agen cerdas agar hanya menggunakan data dari berkas PDF ilmiah yang telah terunduh, terbaca, dan tervalidasi secara mandiri dalam sesi aktif.
+          Protokol riset akademik bebas halusinasi berbasis antrian Git. Claude mencari kandidat paper, automasi GitHub Actions memvalidasi berkas PDF secara ketat, dan hasil diverifikasi melalui fetch commit SHA langsung tanpa token API di chat.
         </p>
         <div class="repo-link-bar">
           <div>Repositori: <a href="https://github.com/maryam0508/vpr-claude-skill" target="_blank" rel="noopener">github.com/maryam0508/vpr-claude-skill</a></div>
-          <div>Dokumentasi: SKILL.md v1.0.2</div>
+          <div>Versi: SKILL.md v2.0.0</div>
         </div>
       </div>
     </header>
 
+    <!-- Inovasi Utama -->
+    <div class="pillars-grid">
+      <div class="pillar-card">
+        <div class="pillar-title">Zero API Token di Chat</div>
+        <p class="pillar-desc">Tidak perlu menempelkan Personal Access Token GitHub ke jendela obrolan. Repositori publik dipicu secara aman hanya melalui Git push berkas antrian.</p>
+      </div>
+      <div class="pillar-card">
+        <div class="pillar-title">Git Push Automation</div>
+        <p class="pillar-desc">Perubahan pada queue/requests.json otomatis memicu runner GitHub Actions untuk mengunduh, menguji 4 syarat validitas, dan mengekstrak dokumen ke Markdown.</p>
+      </div>
+      <div class="pillar-card">
+        <div class="pillar-title">SHA-Based Raw Fetch</div>
+        <p class="pillar-desc">Claude membaca berkas data menggunakan URL berbasis commit SHA terbaru. Menghindari delay cache statis CDN raw.githubusercontent dan menjamin akurasi revisi.</p>
+      </div>
+    </div>
+
     <!-- Visual Flowchart Section -->
     <main class="workflow-section">
       <div class="section-head">
-        <h2 class="section-title">Diagram Urutan Eksekusi Protokol</h2>
-        <p class="section-sub">Klik tiap kotak alur kerja untuk melihat rincian masukan, kriteria seleksi, dan artefak yang dihasilkan.</p>
+        <h2 class="section-title">Diagram Alur Kerja Antrian Terpadu</h2>
+        <p class="section-sub">Klik setiap kotak alur untuk melihat interaksi antara peran Claude, pengguna, dan worker GitHub Actions.</p>
       </div>
 
       <div class="flowchart">
@@ -367,29 +476,28 @@
         <div class="flow-node active" onclick="toggleNode(this)">
           <div class="node-header">
             <span class="node-step">Tahap 01</span>
-            <span class="node-status">Inisiasi</span>
+            <span class="node-status">Eksplorasi Claude</span>
           </div>
-          <h3 class="node-title">Identifikasi Kebutuhan dan Formulasi Kueri</h3>
-          <p class="node-summary">Menganalisis topik riset, tingkat kedalaman materi, dan format keluaran yang diinginkan. Menghasilkan 2 sampai 4 kueri spesifik dalam bahasa ilmiah.</p>
+          <h3 class="node-title">Pencarian Kandidat & Verifikasi Judul Resmi</h3>
+          <p class="node-summary">Claude mencari calon paper via web search dan mencocokkan judul serta penulis langsung ke halaman resmi abs arXiv sebelum diajukan ke antrian.</p>
           <div class="node-detail">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Masukan</div>
-                <div class="detail-val">Instruksi pengguna atau topik kajian</div>
+                <div class="detail-label">Aktor</div>
+                <div class="detail-val">Claude (web search & fetch)</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Operasi</div>
-                <div class="detail-val">Ekspansi kata kunci dan sintaks pencarian</div>
+                <div class="detail-label">Pemeriksaan Awal</div>
+                <div class="detail-val">Kesesuaian ID arXiv dan judul asli halaman abs</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Hasil</div>
-                <div class="detail-val">Daftar kueri akademik terstruktur</div>
+                <div class="detail-label">Keluaran</div>
+                <div class="detail-val">Objek JSON antrian siap commit</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Connector Arrow -->
         <div class="flow-arrow">
           <div class="arrow-line"></div>
           <div class="arrow-head"></div>
@@ -399,29 +507,28 @@
         <div class="flow-node" onclick="toggleNode(this)">
           <div class="node-header">
             <span class="node-step">Tahap 02</span>
-            <span class="node-status">Pencarian</span>
+            <span class="node-status">Pemicu Pengguna</span>
           </div>
-          <h3 class="node-title">Pencarian Kandidat Lintas Repositori</h3>
-          <p class="node-summary">Menghubungi endpoint API akademik open access seperti arXiv, Crossref, Semantic Scholar, dan SearXNG untuk menjaring 5 hingga 10 calon paper.</p>
+          <h3 class="node-title">Penyusunan dan Commit queue/requests.json</h3>
+          <p class="node-summary">Pengguna memasukkan daftar paper yang disiapkan Claude ke berkas queue/requests.json lalu melakukan commit dan push ke branch main.</p>
           <div class="node-detail">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Repositori Sasaran</div>
-                <div class="detail-val">arXiv, Crossref, Semantic Scholar, OpenAlex</div>
+                <div class="detail-label">Aktor</div>
+                <div class="detail-val">Pengguna (GitHub web atau git CLI)</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Aturan Lisensi</div>
-                <div class="detail-val">Hanya Open Access (bebas paywall/pembajakan)</div>
+                <div class="detail-label">Target Berkas</div>
+                <div class="detail-val">queue/requests.json</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Hasil</div>
-                <div class="detail-val">Metadata kandidat dan tautan PDF langsung</div>
+                <div class="detail-label">Efek Samping</div>
+                <div class="detail-val">Workflow GitHub Actions langsung terpicu otomatis</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Connector Arrow -->
         <div class="flow-arrow">
           <div class="arrow-line"></div>
           <div class="arrow-head"></div>
@@ -431,29 +538,28 @@
         <div class="flow-node" onclick="toggleNode(this)">
           <div class="node-header">
             <span class="node-step">Tahap 03</span>
-            <span class="node-status">Pengunduhan</span>
+            <span class="node-status">Otomasi Runner</span>
           </div>
-          <h3 class="node-title">Pengunduhan Berkas PDF ke Penyimpanan Lokal</h3>
-          <p class="node-summary">Mengunduh berkas fisik paper ke direktori kerja menggunakan pustaka permintaan HTTP atau automasi browser dengan batas maksimal 2 kali percobaan.</p>
+          <h3 class="node-title">Pengunduhan dan 4 Tahap Validasi Worker</h3>
+          <p class="node-summary">Runner GitHub Actions menjalankan scripts/queue_worker.py untuk mengunduh PDF dari arxiv.org, menguji 4 syarat fisik, dan mengekstrak teks ke Markdown.</p>
           <div class="node-detail">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Lokasi Simpan</div>
-                <div class="detail-val">Direktori lokal ./papers/{id}.pdf</div>
+                <div class="detail-label">Syarat 1 & 2</div>
+                <div class="detail-val">Header %PDF asli dan ukuran berkas > 30 KB</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Toleransi Percobaan</div>
-                <div class="detail-val">Maksimal 2 kali percobaan per tautan</div>
+                <div class="detail-label">Syarat 3 & 4</div>
+                <div class="detail-val">Teks terbaca > 2.000 karakter dan kesesuaian judul >= 60%</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Hasil</div>
-                <div class="detail-val">Berkas biner PDF di disk lokal</div>
+                <div class="detail-label">Pembersihan</div>
+                <div class="detail-val">PDF biner dihapus dari repositori git, hanya simpan .md</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Connector Arrow -->
         <div class="flow-arrow">
           <div class="arrow-line"></div>
           <div class="arrow-head"></div>
@@ -463,33 +569,28 @@
         <div class="flow-node" onclick="toggleNode(this)">
           <div class="node-header">
             <span class="node-step">Tahap 04</span>
-            <span class="node-status">Validasi Fisik</span>
+            <span class="node-status">Verifikasi Claude</span>
           </div>
-          <h3 class="node-title">Pengujian 4 Syarat Validitas Dokumen</h3>
-          <p class="node-summary">Memeriksa integritas berkas secara ketat sebelum teks diizinkan untuk diproses atau dikutip ke dalam laporan.</p>
+          <h3 class="node-title">Pengambilan Data Berbasis Commit SHA</h3>
+          <p class="node-summary">Claude memeriksa commit SHA terbaru dari repositori publik via GitHub API, kemudian membaca berkas ledger dan Markdown secara langsung tanpa cache.</p>
           <div class="node-detail">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Syarat 1 (Header)</div>
-                <div class="detail-val">Wajib diawali byte b"%PDF" (bukan HTML)</div>
+                <div class="detail-label">Pencegahan Cache</div>
+                <div class="detail-val">Akses raw melalui jalur URL &lt;sha&gt; bukan &lt;main&gt;</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Syarat 2 (Ukuran)</div>
-                <div class="detail-val">Ukuran berkas fisik minimal 30 KB</div>
+                <div class="detail-label">Berkas Verifikasi</div>
+                <div class="detail-val">data/ledger.json dan data/markdown/&lt;id&gt;.md</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Syarat 3 (Teks)</div>
-                <div class="detail-val">Teks terbaca minimal 2.000 karakter</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Syarat 4 (Judul)</div>
-                <div class="detail-val">Kecocokan kata judul pada halaman pertama di atas 50%</div>
+                <div class="detail-label">Integritas</div>
+                <div class="detail-val">Pencocokan hash sha256 dan jumlah halaman</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Connector Arrow -->
         <div class="flow-arrow">
           <div class="arrow-line"></div>
           <div class="arrow-head"></div>
@@ -499,55 +600,23 @@
         <div class="flow-node" onclick="toggleNode(this)">
           <div class="node-header">
             <span class="node-step">Tahap 05</span>
-            <span class="node-status">Pencatatan</span>
+            <span class="node-status">Hasil Akhir</span>
           </div>
-          <h3 class="node-title">Pencatatan Status ke Buku Besar Sumber (Ledger)</h3>
-          <p class="node-summary">Mendokumentasikan status setiap dokumen (Valid atau Gagal beserta rincian alasannya) ke dalam berkas ledger.json yang dapat dirender menjadi papan Kanban.</p>
+          <h3 class="node-title">Rekonsiliasi Status dan Sintesis Terverifikasi</h3>
+          <p class="node-summary">Claude menyusun sintesis ilmiah hanya dari paper berstatus valid dengan mencantumkan kutipan nomor halaman asli (## Page N) serta melaporkan paper gagal.</p>
           <div class="node-detail">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Berkas Sumber</div>
-                <div class="detail-val">ledger.json (sumber kebenaran tunggal)</div>
+                <div class="detail-label">Sumber Kebenaran</div>
+                <div class="detail-val">Hanya dokumen valid di dalam buku besar ledger</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Visualisasi</div>
-                <div class="detail-val">Papan status kanban.html melalui skrip lokal</div>
+                <div class="detail-label">Keamanan Konten</div>
+                <div class="detail-val">Teks diperlakukan sebagai DATA mentah (untrusted)</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Transparansi</div>
-                <div class="detail-val">Melaporkan paper yang gagal tanpa rekayasa</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Connector Arrow -->
-        <div class="flow-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-head"></div>
-        </div>
-
-        <!-- Node 6 -->
-        <div class="flow-node" onclick="toggleNode(this)">
-          <div class="node-header">
-            <span class="node-step">Tahap 06</span>
-            <span class="node-status">Sintesis</span>
-          </div>
-          <h3 class="node-title">Sintesis Markdown Bersih dan Ekspor Sitasi</h3>
-          <p class="node-summary">Menerapkan pembatasan laju (rate limit maks. 5 paper), mengubah isi bab menjadi berkas Markdown (.md) per halaman yang siap diserap penuh oleh AI, serta menghapus tuntas berkas biner PDF di sisi GitHub.</p>
-          <div class="node-detail">
-            <div class="detail-grid">
-              <div class="detail-item">
-                <div class="detail-label">Rate Limit & Keamanan</div>
-                <div class="detail-val">Maks. 5 paper/run, jeda 3 detik antar request</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Format Teks AI</div>
-                <div class="detail-val">Markdown (.md) terstruktur per halaman</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Pembersihan Disk</div>
-                <div class="detail-val">Hapus PDF biner otomatis di runner GitHub</div>
+                <div class="detail-label">Format Sitasi</div>
+                <div class="detail-val">Penulis, tahun, nomor halaman, dan BibTeX tervalidasi</div>
               </div>
             </div>
           </div>
@@ -555,25 +624,66 @@
       </div>
     </main>
 
+    <!-- Rekonsiliasi Status Table -->
+    <section class="table-section">
+      <div class="section-head">
+        <h2 class="section-title">Matriks Rekonsiliasi Status Claude vs Git</h2>
+        <p class="section-sub">Pedoman keputusan Claude saat memeriksa entri pada data/ledger.json.</p>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Status di Ledger</th>
+              <th>Arti Operasional</th>
+              <th>Respon dan Tindakan Claude</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-pending">Tidak Ada Entri</span></td>
+              <td>Belum diproses (antrian baru atau workflow sedang berjalan)</td>
+              <td>Laporkan bahwa dokumen masih dalam antrian, minta pengguna memeriksa tab Actions di GitHub.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-valid">valid</span></td>
+              <td>Lolos 4 tahap pengujian fisik dan judul cocok</td>
+              <td>Ambil teks Markdown via URL SHA commit, periksa kesesuaian judul, dan sintesis temuan ke laporan.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-failed">failed</span></td>
+              <td>Gagal unduh atau tidak memenuhi kriteria validasi</td>
+              <td>Laporkan alasan kegagalan secara transparan sesuai field reason, dilarang mereka-reka isi dokumen.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-failed">failed (3x)</span></td>
+              <td>Batas maksimal percobaan ulang tercapai</td>
+              <td>Minta perbaikan data masukan judul/ID atau sarankan paper alternatif.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- Petunjuk Pemasangan Mudah Box -->
     <section class="skill-box">
-      <h3>Cara Pasang Mudah di Claude.ai (Tanpa Baris Perintah)</h3>
-      <p>Tidak perlu paham terminal Linux ataupun PowerShell. Cukup ikuti langkah klik sederhana:</p>
+      <h3>Cara Pasang Paket Skill di Claude.ai</h3>
+      <p>Pasang arsip skill ZIP ke Claude.ai tanpa perlu konfigurasi server tambahan:</p>
       <ol style="padding-left:20px; font-size:14px; color:var(--text-muted); line-height:1.7; margin-bottom:16px;">
-        <li>Unduh berkas paket ZIP resmi: <a href="https://github.com/maryam0508/vpr-claude-skill/releases/tag/v1.0.2" target="_blank" rel="noopener" style="color:var(--accent); font-weight:600; text-decoration:underline;">vpr-claude-skill.zip</a>.</li>
-        <li>Buka <strong>Claude.ai</strong> di browser, klik menu akun di pojok kiri bawah, lalu buka <strong>Settings / Customize</strong> &rarr; <strong>Skills</strong>.</li>
-        <li>Klik tombol <strong>Upload Skill</strong> dan pilih berkas <code>vpr-claude-skill.zip</code> yang telah diunduh.</li>
-        <li>Selesai. Skill langsung aktif dan siap digunakan untuk memvalidasi setiap paper riset secara otomatis.</li>
+        <li>Unduh berkas rilis resmi: <a href="https://github.com/maryam0508/vpr-claude-skill/releases/tag/v2.0.0" target="_blank" rel="noopener" style="color:var(--accent); font-weight:600; text-decoration:underline;">vpr-claude-skill.zip</a> (versi 2.0.0).</li>
+        <li>Buka <strong>Claude.ai</strong> di browser, klik menu profil, lalu buka <strong>Settings / Customize</strong> &rarr; <strong>Skills</strong>.</li>
+        <li>Klik tombol <strong>Upload Skill</strong> dan pilih berkas <code>vpr-claude-skill.zip</code>.</li>
+        <li>Saat memulai obrolan, beri tahu Claude alamat repositori publik Anda untuk pemrosesan antrian.</li>
       </ol>
       <p style="font-size:13px; color:var(--text-subtle); margin-bottom:0;">
-        Pilihan lanjutan bagi developer yang ingin deploy mandiri via Docker: jalankan <code>docker compose up -d</code> di direktori <code>deploy/</code> untuk mengaktifkan SearXNG lokal dan worker pembersih otomatis 10 menit.
+        Pilihan lanjutan untuk developer yang ingin menjalankan worker lokal: periksa direktori <code>scripts/</code> dan berkas workflow <code>.github/workflows/vpr-queue.yml</code>.
       </p>
     </section>
 
     <!-- Footer dengan nama di pojok bawah -->
     <footer>
       <div class="footer-content">
-        <div>VPR Protocol &bull; Verified Paper Research Workflow</div>
+        <div>VPR Protocol &bull; Verified Paper Research Queue Mode</div>
         <div class="author-corner">siti maryam</div>
       </div>
     </footer>
