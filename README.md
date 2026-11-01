@@ -24,8 +24,8 @@ LICENSE                   # MIT License (Siti Maryam)
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Copyright (c) 2026 Siti Maryam (`maryam0508`).
 
 ## 🌐 Interactive Workflow Web
-- **Live Showcase**: [https://nyam.styna.my.id](https://nyam.styna.my.id)
-- Documentation and 6-stage execution flowchart included in `docs/index.html`.
+- **Live Documentation**: [https://maryam0508.github.io/vpr-claude-skill/](https://maryam0508.github.io/vpr-claude-skill/)
+- Hosted 100% on GitHub Pages (static, zero-server load). Interactive 6-stage execution flowchart and MCP server setup guides included.
 
 ## 🚀 How to Install
 
