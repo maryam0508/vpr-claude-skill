@@ -2,6 +2,7 @@
 name: verified-paper-research
 description: Search, download, validate, and summarize scientific papers and academic journals without hallucination. Generates verified citations and ledger.
 dependencies: python>=3.8, pypdf, requests
+license: MIT
 ---
 
 # Verified Paper Research (vpr) for Claude
@@ -11,6 +12,26 @@ Use this skill whenever asked to search, synthesize, cite, or create presentatio
 ## Core Rule
 > **A paper can only be cited or used if the actual full-text PDF has been downloaded, opened, and verified in this session.**
 > Training memory is NOT an acceptable source for citations, author names, years, or findings.
+
+---
+
+## ⚡ GitHub Actions Sandbox Offloading (Recommended for Claude.ai)
+When Claude runs in an environment where outbound PDF binary downloads are blocked or restricted, use the repository's GitHub Actions workflow as an offloaded sandbox downloader & validator:
+
+1. **Dispatch the Workflow via GitHub API**:
+   ```bash
+   curl -X POST \
+     -H "Accept: application/vnd.github.v3+json" \
+     -H "Authorization: token $GITHUB_TOKEN" \
+     https://api.github.com/repos/maryam0508/vpr-claude-skill/actions/workflows/vpr-sandbox.yml/dispatches \
+     -d '{"ref":"main", "inputs":{"paper_urls":"https://arxiv.org/abs/2310.02949"}}'
+   ```
+2. **Retrieve Clean Extracted Text**:
+   The workflow runs on an Ubuntu runner, validates all 4 rules, extracts text, and pushes directly to the `data` branch:
+   - Direct Raw URL: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/extracted_papers.json`
+   - Ledger Status: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/ledger.json`
+
+---
 
 ---
 

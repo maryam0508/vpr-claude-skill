@@ -10,10 +10,18 @@ Ensures Claude only cites, quotes, and synthesizes findings from scientific pape
 vpr/
 ├── SKILL.md              # Core skill instructions and frontmatter
 └── scripts/
-    └── render_kanban.py  # Static HTML Kanban viewer from ledger.json
+    ├── render_kanban.py  # Static HTML Kanban viewer from ledger.json
+    └── sandbox_worker.py # GitHub Actions worker for downloading & validating PDFs
+.github/
+└── workflows/
+    └── vpr-sandbox.yml   # Workflow dispatch runner for Claude sandbox offloading
 docs/
 └── index.html            # Visual interactive workflow web app
+LICENSE                   # MIT License (Siti Maryam)
 ```
+
+## ⚖️ License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Copyright (c) 2026 Siti Maryam (`maryam0508`).
 
 ## 🌐 Interactive Workflow Web
 - **Live Showcase**: [https://nyam.styna.my.id](https://nyam.styna.my.id)
