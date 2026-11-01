@@ -15,10 +15,16 @@ Use this skill whenever asked to search, synthesize, cite, or create presentatio
 
 ---
 
-## ⚡ GitHub Actions Sandbox Offloading (Recommended for Claude.ai)
-When Claude runs in an environment where outbound PDF binary downloads are blocked or restricted, use the repository's GitHub Actions workflow as an offloaded sandbox downloader & validator:
+## ⚡ GitHub Actions Sandbox Offloading & Rate Limiting
+When Claude runs in an environment where outbound PDF binary downloads are restricted, use the repository's GitHub Actions workflow as an offloaded sandbox downloader & validator:
 
-1. **Dispatch the Workflow via GitHub API**:
+### Rate Limiting & Safety Policy
+- **Rate Limit**: Maksimal **5 paper per eksekusi** dengan jeda minimum 3 detik antar request untuk menjaga integritas upstream.
+- **Konversi ke Markdown (`.md`)**: Seluruh teks halaman diekstrak dan ditransformasikan menjadi berkas Markdown berstruktur rapi (`## Page X`) yang optimal dicerna jendela konteks AI.
+- **Zero Binary Storage**: Berkas PDF biner otomatis dihapus dari disk runner setelah validasi & konversi selesai, sehingga repositori GitHub tetap bersih dan bebas blob biner besar.
+
+### Alur Eksekusi:
+1. **Dispatch Workflow via GitHub API**:
    ```bash
    curl -X POST \
      -H "Accept: application/vnd.github.v3+json" \
@@ -26,10 +32,11 @@ When Claude runs in an environment where outbound PDF binary downloads are block
      https://api.github.com/repos/maryam0508/vpr-claude-skill/actions/workflows/vpr-sandbox.yml/dispatches \
      -d '{"ref":"main", "inputs":{"paper_urls":"https://arxiv.org/abs/2310.02949"}}'
    ```
-2. **Retrieve Clean Extracted Text**:
-   The workflow runs on an Ubuntu runner, validates all 4 rules, extracts text, and pushes directly to the `data` branch:
-   - Direct Raw URL: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/extracted_papers.json`
-   - Ledger Status: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/ledger.json`
+2. **AI Membaca Teks Penuh (Full Text Markdown)**:
+   Claude langsung mengambil teks lengkap bersih dari tautan raw cabang `data`:
+   - Data JSON Lengkap: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/extracted_papers.json`
+   - Berkas Markdown Per Paper: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/markdown/paper_1.md`
+   - Buku Besar Status: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/ledger.json`
 
 ---
 

@@ -533,21 +533,21 @@
             <span class="node-step">Tahap 06</span>
             <span class="node-status">Sintesis</span>
           </div>
-          <h3 class="node-title">Sintesis Materi Bebas Halusinasi dan Ekspor Sitasi</h3>
-          <p class="node-summary">Menyusun kesimpulan hanya berpatokan pada nomor halaman teks yang valid, disertai ekspor referensi ke format EndNote XML (Mendeley) atau BibTeX.</p>
+          <h3 class="node-title">Sintesis Markdown Bersih dan Ekspor Sitasi</h3>
+          <p class="node-summary">Menerapkan pembatasan laju (rate limit maks. 5 paper), mengubah isi bab menjadi berkas Markdown (.md) per halaman yang siap diserap penuh oleh AI, serta menghapus tuntas berkas biner PDF di sisi GitHub.</p>
           <div class="node-detail">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Kaidah Sitasi</div>
-                <div class="detail-val">Klaim wajib merujuk (Penulis, Tahun, Halaman)</div>
+                <div class="detail-label">Rate Limit & Keamanan</div>
+                <div class="detail-val">Maks. 5 paper/run, jeda 3 detik antar request</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Format Ekspor</div>
-                <div class="detail-val">EndNote XML (Mendeley), BibTeX, Markdown</div>
+                <div class="detail-label">Format Teks AI</div>
+                <div class="detail-val">Markdown (.md) terstruktur per halaman</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Hasil Akhir</div>
-                <div class="detail-val">Materi ilmiah dengan daftar pustaka tervalidasi</div>
+                <div class="detail-label">Pembersihan Disk</div>
+                <div class="detail-val">Hapus PDF biner otomatis di runner GitHub</div>
               </div>
             </div>
           </div>
@@ -555,12 +555,25 @@
       </div>
     </main>
 
-    <!-- Petunjuk Skill Box -->
+    <!-- MCP Integration Section -->
     <section class="skill-box">
-      <h3>Implementasi Skill untuk Claude Code</h3>
-      <p>Pasang direktori skill langsung ke dalam proyek kamu agar Claude menerapkan alur verifikasi ini setiap kali diminta mencari materi ilmiah:</p>
-      <pre><code>git clone https://github.com/maryam0508/vpr-claude-skill.git
-cp -r vpr-claude-skill/vpr .claude/skills/vpr</code></pre>
+      <h3>Model Context Protocol (MCP) Server Integration</h3>
+      <p>Hubungkan VPR langsung sebagai MCP Server di Claude Desktop atau Claude Code. Claude dapat memanggil tool pencarian, validasi, dan pembacaan berkas Markdown secara native:</p>
+      <pre><code>{
+  "mcpServers": {
+    "vpr-research": {
+      "command": "python",
+      "args": ["-m", "vpr.mcp_server"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_your_token_here",
+        "VPR_REPO": "maryam0508/vpr-claude-skill"
+      }
+    }
+  }
+}</code></pre>
+      <p style="font-size:13px; color:var(--text-subtle); margin-top:10px; margin-bottom:0;">
+        Melalui MCP, Claude otomatis memicu proses runner di GitHub Actions, membaca teks Markdown penuh, dan menerima sitasi tervalidasi tanpa keterbatasan unduhan lokal.
+      </p>
     </section>
 
     <!-- Footer dengan nama di pojok bawah -->

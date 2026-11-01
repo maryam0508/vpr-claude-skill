@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       paper_urls:
-        description: 'Comma or newline-separated PDF URLs or arXiv IDs'
+        description: 'Comma or newline-separated PDF URLs or arXiv IDs (Max 5 per run)'
         required: true
         type: string
       expected_title:
@@ -33,7 +33,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pypdf requests
 
-      - name: Run VPR Sandbox Worker
+      - name: Run VPR Sandbox Worker (Rate-limited, Markdown, Auto-cleanup PDF)
         env:
           PAPER_URLS: ${{ github.event.inputs.paper_urls }}
           EXPECTED_TITLE: ${{ github.event.inputs.expected_title }}
@@ -43,20 +43,22 @@ jobs:
             --expected-title "$EXPECTED_TITLE" \
             --output-dir vpr_output
 
-      - name: Upload Artifacts
+      - name: Upload Clean Markdown & Ledger Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: vpr-results
+          name: vpr-markdown-artifacts
           path: vpr_output/
           retention-days: 7
 
-      - name: Commit results to data branch
+      - name: Commit clean Markdown text to data branch
         run: |
           git config --global user.name "maryam0508"
           git config --global user.email "351131256+maryam0508@users.noreply.github.com"
           git checkout -B data
           mkdir -p latest
+          # Salin file markdown dan json, tanpa ada file PDF binary sama sekali
           cp -r vpr_output/* latest/
+          rm -rf latest/_temp_pdf
           git add latest/
-          git commit -m "chore(data): update vpr artifacts [skip ci]" || echo "No changes to commit"
+          git commit -m "chore(data): publish clean paper markdown artifacts [skip ci]" || echo "No changes to commit"
           git push origin data --force
