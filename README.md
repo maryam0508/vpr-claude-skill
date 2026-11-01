@@ -11,7 +11,13 @@ vpr/
 ├── SKILL.md              # Core skill instructions and frontmatter
 └── scripts/
     └── render_kanban.py  # Static HTML Kanban viewer from ledger.json
+docs/
+└── index.html            # Visual interactive workflow web app
 ```
+
+## 🌐 Interactive Workflow Web
+- **Live Showcase**: [https://nyam.styna.my.id](https://nyam.styna.my.id)
+- Documentation and 6-stage execution flowchart included in `docs/index.html`.
 
 ## 🚀 How to Install
 

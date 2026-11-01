@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPR Workflow - Verified Paper Research</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --surface: #ffffff;
+      --surface-subtle: #f7f4ed;
+      --border: #e8e2d5;
+      --border-dark: #1e293b;
+      --text-main: #18181b;
+      --text-muted: #52525b;
+      --text-subtle: #71717a;
+      --accent: #b45309;
+      --accent-soft: #fef3c7;
+      --accent-border: #fde68a;
+      --success: #15803d;
+      --success-soft: #dcfce7;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    header {
+      padding: 56px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .masthead {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .pill-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+    }
+
+    .tag-accent {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+      color: var(--accent);
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(32px, 4.5vw, 46px);
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    .desc {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 720px;
+      line-height: 1.6;
+    }
+
+    .repo-link-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-subtle);
+      padding-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .repo-link-bar a {
+      color: var(--text-main);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    /* Workflow Flowchart Section */
+    .workflow-section {
+      margin-bottom: 64px;
+    }
+
+    .section-head {
+      margin-bottom: 28px;
+    }
+
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .section-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .flowchart {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .flow-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px;
+      position: relative;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .flow-node:hover, .flow-node.active {
+      border-color: var(--border-dark);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .node-step {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .node-status {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-subtle);
+    }
+
+    .node-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .node-summary {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .node-detail {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    .flow-node.active .node-detail {
+      display: block;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .detail-item {
+      background: var(--surface-subtle);
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-subtle);
+      margin-bottom: 2px;
+    }
+
+    .detail-val {
+      font-size: 13px;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    /* Flow Connector with Arrow */
+    .flow-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      position: relative;
+    }
+
+    .arrow-line {
+      width: 2px;
+      height: 24px;
+      background: var(--border);
+    }
+
+    .arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid var(--border);
+    }
+
+    /* Claude Skill Reference Box */
+    .skill-box {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px;
+      margin-bottom: 64px;
+    }
+
+    .skill-box h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .skill-box p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    pre {
+      background: #18181b;
+      color: #fafafa;
+      padding: 14px 16px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      overflow-x: auto;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0 32px;
+      margin-top: auto;
+    }
+
+    .footer-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-subtle);
+      flex-wrap: wrap;
+    }
+
+    .author-corner {
+      font-size: 11px;
+      color: #a1a1aa;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 16px;
+      }
+      header {
+        padding: 36px 0 24px;
+      }
+      .flow-node {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="masthead">
+        <div class="pill-row">
+          <span class="tag">Spesifikasi Skill</span>
+          <span class="tag tag-accent">Verified Paper Research</span>
+          <span class="tag">Claude AI</span>
+        </div>
+        <h1>Alur Kerja Penelusuran dan Validasi Ilmiah</h1>
+        <p class="desc">
+          Protokol sistematis untuk agen cerdas agar hanya menggunakan data dari berkas PDF ilmiah yang telah terunduh, terbaca, dan tervalidasi secara mandiri dalam sesi aktif.
+        </p>
+        <div class="repo-link-bar">
+          <div>Repositori: <a href="https://github.com/maryam0508/vpr-claude-skill" target="_blank" rel="noopener">github.com/maryam0508/vpr-claude-skill</a></div>
+          <div>Dokumentasi: SKILL.md v1.0.0</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Visual Flowchart Section -->
+    <main class="workflow-section">
+      <div class="section-head">
+        <h2 class="section-title">Diagram Urutan Eksekusi Protokol</h2>
+        <p class="section-sub">Klik tiap kotak alur kerja untuk melihat rincian masukan, kriteria seleksi, dan artefak yang dihasilkan.</p>
+      </div>
+
+      <div class="flowchart">
+        <!-- Node 1 -->
+        <div class="flow-node active" onclick="toggleNode(this)">
+          <div class="node-header">
+            <span class="node-step">Tahap 01</span>
+            <span class="node-status">Inisiasi</span>
+          </div>
+          <h3 class="node-title">Identifikasi Kebutuhan dan Formulasi Kueri</h3>
+          <p class="node-summary">Menganalisis topik riset, tingkat kedalaman materi, dan format keluaran yang diinginkan. Menghasilkan 2 sampai 4 kueri spesifik dalam bahasa ilmiah.</p>
+          <div class="node-detail">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Masukan</div>
+                <div class="detail-val">Instruksi pengguna atau topik kajian</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Operasi</div>
+                <div class="detail-val">Ekspansi kata kunci dan sintaks pencarian</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Hasil</div>
+                <div class="detail-val">Daftar kueri akademik terstruktur</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector Arrow -->
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+
+        <!-- Node 2 -->
+        <div class="flow-node" onclick="toggleNode(this)">
+          <div class="node-header">
+            <span class="node-step">Tahap 02</span>
+            <span class="node-status">Pencarian</span>
+          </div>
+          <h3 class="node-title">Pencarian Kandidat Lintas Repositori</h3>
+          <p class="node-summary">Menghubungi endpoint API akademik open access seperti arXiv, Crossref, Semantic Scholar, dan SearXNG untuk menjaring 5 hingga 10 calon paper.</p>
+          <div class="node-detail">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Repositori Sasaran</div>
+                <div class="detail-val">arXiv, Crossref, Semantic Scholar, OpenAlex</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Aturan Lisensi</div>
+                <div class="detail-val">Hanya Open Access (bebas paywall/pembajakan)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Hasil</div>
+                <div class="detail-val">Metadata kandidat dan tautan PDF langsung</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector Arrow -->
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+
+        <!-- Node 3 -->
+        <div class="flow-node" onclick="toggleNode(this)">
+          <div class="node-header">
+            <span class="node-step">Tahap 03</span>
+            <span class="node-status">Pengunduhan</span>
+          </div>
+          <h3 class="node-title">Pengunduhan Berkas PDF ke Penyimpanan Lokal</h3>
+          <p class="node-summary">Mengunduh berkas fisik paper ke direktori kerja menggunakan pustaka permintaan HTTP atau automasi browser dengan batas maksimal 2 kali percobaan.</p>
+          <div class="node-detail">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Lokasi Simpan</div>
+                <div class="detail-val">Direktori lokal ./papers/{id}.pdf</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Toleransi Percobaan</div>
+                <div class="detail-val">Maksimal 2 kali percobaan per tautan</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Hasil</div>
+                <div class="detail-val">Berkas biner PDF di disk lokal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector Arrow -->
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+
+        <!-- Node 4 -->
+        <div class="flow-node" onclick="toggleNode(this)">
+          <div class="node-header">
+            <span class="node-step">Tahap 04</span>
+            <span class="node-status">Validasi Fisik</span>
+          </div>
+          <h3 class="node-title">Pengujian 4 Syarat Validitas Dokumen</h3>
+          <p class="node-summary">Memeriksa integritas berkas secara ketat sebelum teks diizinkan untuk diproses atau dikutip ke dalam laporan.</p>
+          <div class="node-detail">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Syarat 1 (Header)</div>
+                <div class="detail-val">Wajib diawali byte b"%PDF" (bukan HTML)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Syarat 2 (Ukuran)</div>
+                <div class="detail-val">Ukuran berkas fisik minimal 30 KB</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Syarat 3 (Teks)</div>
+                <div class="detail-val">Teks terbaca minimal 2.000 karakter</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Syarat 4 (Judul)</div>
+                <div class="detail-val">Kecocokan kata judul pada halaman pertama di atas 50%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector Arrow -->
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+
+        <!-- Node 5 -->
+        <div class="flow-node" onclick="toggleNode(this)">
+          <div class="node-header">
+            <span class="node-step">Tahap 05</span>
+            <span class="node-status">Pencatatan</span>
+          </div>
+          <h3 class="node-title">Pencatatan Status ke Buku Besar Sumber (Ledger)</h3>
+          <p class="node-summary">Mendokumentasikan status setiap dokumen (Valid atau Gagal beserta rincian alasannya) ke dalam berkas ledger.json yang dapat dirender menjadi papan Kanban.</p>
+          <div class="node-detail">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Berkas Sumber</div>
+                <div class="detail-val">ledger.json (sumber kebenaran tunggal)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Visualisasi</div>
+                <div class="detail-val">Papan status kanban.html melalui skrip lokal</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Transparansi</div>
+                <div class="detail-val">Melaporkan paper yang gagal tanpa rekayasa</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector Arrow -->
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head"></div>
+        </div>
+
+        <!-- Node 6 -->
+        <div class="flow-node" onclick="toggleNode(this)">
+          <div class="node-header">
+            <span class="node-step">Tahap 06</span>
+            <span class="node-status">Sintesis</span>
+          </div>
+          <h3 class="node-title">Sintesis Materi Bebas Halusinasi dan Ekspor Sitasi</h3>
+          <p class="node-summary">Menyusun kesimpulan hanya berpatokan pada nomor halaman teks yang valid, disertai ekspor referensi ke format EndNote XML (Mendeley) atau BibTeX.</p>
+          <div class="node-detail">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Kaidah Sitasi</div>
+                <div class="detail-val">Klaim wajib merujuk (Penulis, Tahun, Halaman)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Format Ekspor</div>
+                <div class="detail-val">EndNote XML (Mendeley), BibTeX, Markdown</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Hasil Akhir</div>
+                <div class="detail-val">Materi ilmiah dengan daftar pustaka tervalidasi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Petunjuk Skill Box -->
+    <section class="skill-box">
+      <h3>Implementasi Skill untuk Claude Code</h3>
+      <p>Pasang direktori skill langsung ke dalam proyek kamu agar Claude menerapkan alur verifikasi ini setiap kali diminta mencari materi ilmiah:</p>
+      <pre><code>git clone https://github.com/maryam0508/vpr-claude-skill.git
+cp -r vpr-claude-skill/vpr .claude/skills/vpr</code></pre>
+    </section>
+
+    <!-- Footer dengan nama di pojok bawah -->
+    <footer>
+      <div class="footer-content">
+        <div>VPR Protocol &bull; Verified Paper Research Workflow</div>
+        <div class="author-corner">siti maryam</div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function toggleNode(node) {
+      const isAlreadyActive = node.classList.contains('active');
+      document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active'));
+      if (!isAlreadyActive) {
+        node.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
