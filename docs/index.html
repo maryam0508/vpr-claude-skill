@@ -555,24 +555,18 @@
       </div>
     </main>
 
-    <!-- MCP Integration Section -->
+    <!-- Petunjuk Pemasangan Mudah Box -->
     <section class="skill-box">
-      <h3>Model Context Protocol (MCP) Server Integration</h3>
-      <p>Hubungkan VPR langsung sebagai MCP Server di Claude Desktop atau Claude Code. Claude dapat memanggil tool pencarian, validasi, dan pembacaan berkas Markdown secara native:</p>
-      <pre><code>{
-  "mcpServers": {
-    "vpr-research": {
-      "command": "python",
-      "args": ["-m", "vpr.mcp_server"],
-      "env": {
-        "GITHUB_TOKEN": "ghp_your_token_here",
-        "VPR_REPO": "maryam0508/vpr-claude-skill"
-      }
-    }
-  }
-}</code></pre>
-      <p style="font-size:13px; color:var(--text-subtle); margin-top:10px; margin-bottom:0;">
-        Melalui MCP, Claude otomatis memicu proses runner di GitHub Actions, membaca teks Markdown penuh, dan menerima sitasi tervalidasi tanpa keterbatasan unduhan lokal.
+      <h3>Cara Pasang Mudah di Claude.ai (Tanpa Baris Perintah)</h3>
+      <p>Tidak perlu paham terminal Linux ataupun PowerShell. Cukup ikuti langkah klik sederhana:</p>
+      <ol style="padding-left:20px; font-size:14px; color:var(--text-muted); line-height:1.7; margin-bottom:16px;">
+        <li>Unduh berkas paket ZIP resmi: <a href="https://github.com/maryam0508/vpr-claude-skill/releases/tag/v1.0.1" target="_blank" rel="noopener" style="color:var(--accent); font-weight:600; text-decoration:underline;">vpr-claude-skill.zip</a>.</li>
+        <li>Buka <strong>Claude.ai</strong> di browser, klik menu akun di pojok kiri bawah, lalu buka <strong>Settings / Customize</strong> &rarr; <strong>Skills</strong>.</li>
+        <li>Klik tombol <strong>Upload Skill</strong> dan pilih berkas <code>vpr-claude-skill.zip</code> yang telah diunduh.</li>
+        <li>Selesai. Skill langsung aktif dan siap digunakan untuk memvalidasi setiap paper riset secara otomatis.</li>
+      </ol>
+      <p style="font-size:13px; color:var(--text-subtle); margin-bottom:0;">
+        Pilihan lanjutan bagi developer yang ingin deploy mandiri via Docker: jalankan <code>docker compose up -d</code> di direktori <code>deploy/</code> untuk mengaktifkan SearXNG lokal dan worker pembersih otomatis 10 menit.
       </p>
     </section>
 

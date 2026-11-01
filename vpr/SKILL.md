@@ -15,28 +15,18 @@ Use this skill whenever asked to search, synthesize, cite, or create presentatio
 
 ---
 
-## ⚡ GitHub Actions Sandbox Offloading & Rate Limiting
-When Claude runs in an environment where outbound PDF binary downloads are restricted, use the repository's GitHub Actions workflow as an offloaded sandbox downloader & validator:
+## ⚡ Mode Free MCP & Pembatasan Laju (Rate Limit)
 
-### Rate Limiting & Safety Policy
-- **Rate Limit**: Maksimal **5 paper per eksekusi** dengan jeda minimum 3 detik antar request untuk menjaga integritas upstream.
-- **Konversi ke Markdown (`.md`)**: Seluruh teks halaman diekstrak dan ditransformasikan menjadi berkas Markdown berstruktur rapi (`## Page X`) yang optimal dicerna jendela konteks AI.
-- **Zero Binary Storage**: Berkas PDF biner otomatis dihapus dari disk runner setelah validasi & konversi selesai, sehingga repositori GitHub tetap bersih dan bebas blob biner besar.
+### 1. Free MCP Mode (Tanpa Token GitHub)
+Pada v1.0.1, `vpr/mcp_server.py` mendukung mode **Free MCP**:
+- Jika variabel `GITHUB_TOKEN` tidak diatur, MCP Server otomatis beralih ke engine riset lokal mandiri (Direct arXiv API & lokal parser).
+- Tidak mewajibkan akun GitHub atau konfigurasi token berbelit.
 
-### Alur Eksekusi:
-1. **Dispatch Workflow via GitHub API**:
-   ```bash
-   curl -X POST \
-     -H "Accept: application/vnd.github.v3+json" \
-     -H "Authorization: token $GITHUB_TOKEN" \
-     https://api.github.com/repos/maryam0508/vpr-claude-skill/actions/workflows/vpr-sandbox.yml/dispatches \
-     -d '{"ref":"main", "inputs":{"paper_urls":"https://arxiv.org/abs/2310.02949"}}'
-   ```
-2. **AI Membaca Teks Penuh (Full Text Markdown)**:
-   Claude langsung mengambil teks lengkap bersih dari tautan raw cabang `data`:
-   - Data JSON Lengkap: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/extracted_papers.json`
-   - Berkas Markdown Per Paper: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/markdown/paper_1.md`
-   - Buku Besar Status: `https://raw.githubusercontent.com/maryam0508/vpr-claude-skill/data/latest/ledger.json`
+### 2. Aturan Pembatasan Laju (Rate Limit)
+Untuk menjaga keandalan jaringan dan mencegah pemblokiran upstream:
+- Maksimal **3 kali batch crawling search per 1.5 menit (90 detik)**.
+- Setiap batch dapat menampung dan memvalidasi hingga 5 berkas paper sekaligus.
+- Jika limit tercapai, MCP akan memberikan notifikasi sisa waktu tunggu secara transparan.
 
 ---
 

@@ -1,0 +1,38 @@
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: vpr-searxng
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  vpr-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vpr-worker
+    restart: unless-stopped
+    depends_on:
+      - searxng
+    environment:
+      - SEARXNG_INTERNAL_URL=http://searxng:8080
+      - DATA_DIR=/app/data
+      - CLEANUP_MINUTES=10
+    volumes:
+      - vpr_data:/app/data
+      - ../vpr:/app/vpr:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+volumes:
+  vpr_data:

@@ -27,15 +27,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Live Documentation**: [https://maryam0508.github.io/vpr-claude-skill/](https://maryam0508.github.io/vpr-claude-skill/)
 - Hosted 100% on GitHub Pages (static, zero-server load). Interactive 6-stage execution flowchart and MCP server setup guides included.
 
-## 🚀 How to Install
+## 🚀 Cara Pemasangan Mudah (Tanpa Perlu Terminal / Command Line)
 
-### Option 1: Claude.ai (Web / Desktop)
-1. Download or package the `vpr` folder into `vpr.zip`.
-2. Open Claude.ai → **Customize** → **Skills**.
-3. Upload the ZIP file and enable the skill.
+Tidak perlu paham terminal Linux ataupun PowerShell. Ikuti 3 langkah klik sederhana berikut:
 
-### Option 2: Claude Code (CLI)
-Copy the `vpr` directory into your project's `.claude/skills/` folder:
-```bash
-cp -r vpr /path/to/project/.claude/skills/
-```
+1. **Unduh Berkas Skill**:
+   - Buka halaman [Releases v1.0.1](https://github.com/maryam0508/vpr-claude-skill/releases/tag/v1.0.1).
+   - Klik dan unduh berkas **`vpr-claude-skill.zip`** ke komputer atau laptop kamu.
+
+2. **Pasang di Claude.ai**:
+   - Buka peramban dan masuk ke **Claude.ai**.
+   - Klik menu profil di pojok kiri bawah, lalu pilih **Settings** atau **Customize**.
+   - Pilih tab **Skills**.
+   - Klik tombol **Upload Skill** (atau drag-and-drop berkas `.zip`), lalu pilih berkas `vpr-claude-skill.zip` yang baru diunduh.
+   - Pastikan status skill aktif (toggle on).
+
+3. **Gunakan Langsung**:
+   - Buka percakapan baru dengan Claude dan minta topik riset apa saja, misalnya:
+     > *"Carikan paper ilmiah tentang evaluasi keamanan AI terbaru dan sertakan sitasi terverifikasinya."*
+   - Claude akan otomatis menjalankan protokol verifikasi VPR tanpa mengarang referensi.
+
+---
+
+## 🛠️ Pilihan: Pemasangan Mandiri via Docker (Self-Hosted Manual Deploy)
+Bagi pengguna yang ingin menjalankan mesin pencari dan penampung berkas sendiri secara lokal:
+1. Masuk ke direktori `deploy/`.
+2. Jalankan `docker compose up -d`.
+3. Lingkungan Docker sudah mencakup:
+   - **SearXNG**: Mesin penelusur meta open access internal.
+   - **VPR Worker Linux**: Penampung berkas dan konverter Markdown otomatis.
+   - **Auto-Cleanup Daemon**: Pembersih otomatis berkas biner PDF setiap 10 menit agar disk tidak penuh.

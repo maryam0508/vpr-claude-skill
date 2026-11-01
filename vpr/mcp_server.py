@@ -1,30 +1,36 @@
 #!/usr/bin/env python3
 """
 VPR MCP Server: Model Context Protocol (stdio transport) server for Claude / AI Assistants.
-Provides 3 tools:
+Provides tools:
 1. vpr_search_candidates(query, max_results): Search open-access papers via arXiv API.
-2. vpr_trigger_sandbox(paper_urls, expected_title): Trigger GitHub Actions workflow dispatch on maryam0508/vpr-claude-skill.
-3. vpr_fetch_verified_markdown(paper_id_or_url): Fetch verified markdown text from branch 'data' of the repository.
+2. vpr_trigger_sandbox(paper_urls, expected_title): Trigger GitHub Actions workflow or fallback locally.
+3. vpr_fetch_verified_markdown(paper_id_or_url): Fetch verified markdown text from branch 'data' or local storage.
+4. vpr_local_research(query, max_papers): Local crawling, validation, and markdown conversion (Docker/local).
 """
 
 import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
 SERVER_NAME = "vpr-mcp-server"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.0.1"
 PROTOCOL_VERSION = "2024-11-05"
 
 DEFAULT_REPO = "maryam0508/vpr-claude-skill"
 WORKFLOW_FILE = "vpr-sandbox.yml"
 RAW_DATA_BASE_URL = f"https://raw.githubusercontent.com/{DEFAULT_REPO}/data"
+USER_AGENT = "VPR-MCPServer/1.0.1 (+https://github.com/maryam0508/vpr-claude-skill)"
 
-USER_AGENT = "VPR-MCPServer/1.0 (+https://github.com/maryam0508/vpr-claude-skill)"
+# Rate Limiter: Max 3 crawling/search requests per 90 seconds (1.5 min)
+RATE_LIMIT_MAX_REQUESTS = 3
+RATE_LIMIT_WINDOW_SECONDS = 90.0
+_request_timestamps: List[float] = []
 
 
 def log(msg: str) -> None:
@@ -32,8 +38,32 @@ def log(msg: str) -> None:
     sys.stderr.flush()
 
 
+def check_rate_limit() -> Optional[Dict[str, Any]]:
+    """Enforce maximum 3 crawling/search requests within 90 seconds (1.5 minutes)."""
+    now = time.time()
+    cutoff = now - RATE_LIMIT_WINDOW_SECONDS
+    global _request_timestamps
+    _request_timestamps = [t for t in _request_timestamps if t > cutoff]
+
+    if len(_request_timestamps) >= RATE_LIMIT_MAX_REQUESTS:
+        earliest = _request_timestamps[0]
+        retry_after = int(RATE_LIMIT_WINDOW_SECONDS - (now - earliest)) + 1
+        return {
+            "status": "rate_limited",
+            "error": f"Rate limit exceeded: Max {RATE_LIMIT_MAX_REQUESTS} requests per {int(RATE_LIMIT_WINDOW_SECONDS)}s (1.5 min).",
+            "retry_after_seconds": max(1, retry_after),
+            "window_seconds": int(RATE_LIMIT_WINDOW_SECONDS),
+        }
+    _request_timestamps.append(now)
+    return None
+
+
 def tool_search_candidates(query: str, max_results: int = 5) -> Dict[str, Any]:
-    """Search arXiv API for academic papers matching the query."""
+    """Search arXiv API for academic papers matching the query with rate limiting."""
+    limit_check = check_rate_limit()
+    if limit_check:
+        return limit_check
+
     max_res = max(1, min(int(max_results), 10))
     encoded_query = urllib.parse.quote(query.strip())
     url = f"https://export.arxiv.org/api/query?search_query=all:{encoded_query}&start=0&max_results={max_res}&sortBy=relevance&sortOrder=descending"
@@ -98,13 +128,16 @@ def tool_search_candidates(query: str, max_results: int = 5) -> Dict[str, Any]:
 
 
 def tool_trigger_sandbox(paper_urls: str, expected_title: str = "") -> Dict[str, Any]:
-    """Trigger GitHub Actions workflow dispatch in maryam0508/vpr-claude-skill."""
+    """
+    Trigger GitHub Actions workflow dispatch or run in Free MCP Mode if no token provided.
+    """
     github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+
+    # Free MCP Mode: if token is absent, run local research directly
     if not github_token:
-        return {
-            "success": False,
-            "error": "GITHUB_TOKEN / GH_TOKEN environment variable is not set. Token is required for workflow_dispatch.",
-        }
+        log("GITHUB_TOKEN not detected. Executing in Free MCP Mode (local pipeline).")
+        urls = [u.strip() for u in re.split(r"[\n,]+", paper_urls.strip()) if u.strip()]
+        return run_local_pipeline(urls, expected_title=expected_title)
 
     repo = os.environ.get("VPR_GITHUB_REPO", DEFAULT_REPO)
     api_url = f"https://api.github.com/repos/{repo}/actions/workflows/{WORKFLOW_FILE}/dispatches"
@@ -133,6 +166,7 @@ def tool_trigger_sandbox(paper_urls: str, expected_title: str = "") -> Dict[str,
             if status_code in (204, 201, 200):
                 return {
                     "success": True,
+                    "mode": "cloud_github_actions",
                     "message": f"Successfully triggered workflow '{WORKFLOW_FILE}' on {repo} (ref: main).",
                     "paper_urls": paper_urls,
                     "expected_title": expected_title,
@@ -151,11 +185,34 @@ def tool_trigger_sandbox(paper_urls: str, expected_title: str = "") -> Dict[str,
 
 
 def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
-    """Fetch verified markdown or ledger from GitHub branch 'data'."""
+    """Fetch verified markdown or ledger from local storage first, then GitHub branch 'data'."""
     target = paper_id_or_url.strip()
     target_clean = os.path.basename(target)
+    default_data = "/app/data" if os.path.exists("/app") and os.access("/app", os.W_OK) else os.path.expanduser("~/.vpr/data")
+    data_dir = os.environ.get("DATA_DIR", default_data)
 
-    # Determine filename
+    # 1. Local storage check (Free MCP / Docker mode)
+    local_candidates = [
+        os.path.join(data_dir, "markdown", target_clean),
+        os.path.join(data_dir, "markdown", f"{target_clean}.md"),
+        os.path.join(data_dir, target_clean),
+        os.path.join("./papers", target_clean),
+        os.path.join("./papers", f"{target_clean}.md"),
+    ]
+    for lp in local_candidates:
+        if os.path.isfile(lp):
+            try:
+                with open(lp, "r", encoding="utf-8", errors="replace") as f:
+                    return {
+                        "success": True,
+                        "source": "local_storage",
+                        "path": lp,
+                        "content": f.read(),
+                    }
+            except Exception as e:
+                log(f"Error reading local file {lp}: {e}")
+
+    # 2. Remote check via GitHub 'data' branch
     if target_clean in ("ledger.json", "extracted_papers.json"):
         remote_path = f"latest/{target_clean}"
     elif target_clean.endswith(".md"):
@@ -163,10 +220,8 @@ def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
     elif target_clean.isdigit():
         remote_path = f"latest/markdown/paper_{target_clean}.md"
     else:
-        # Check if arxiv ID or general paper identifier
         arxiv_match = re.search(r"(\d{4}\.\d{4,5})", target)
         if arxiv_match:
-            # First fetch extracted_papers.json to find corresponding paper file
             ledger_url = f"{RAW_DATA_BASE_URL}/latest/extracted_papers.json"
             req = urllib.request.Request(ledger_url, headers={"User-Agent": USER_AGENT})
             try:
@@ -176,6 +231,7 @@ def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
                         if arxiv_match.group(1) in p.get("url", "") or arxiv_match.group(1) in p.get("title", ""):
                             return {
                                 "success": True,
+                                "source": "github_data_branch",
                                 "matched_paper": p.get("title"),
                                 "url": p.get("url"),
                                 "content_markdown": p.get("content_markdown"),
@@ -192,26 +248,170 @@ def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
             content = resp.read().decode("utf-8", errors="replace")
             return {
                 "success": True,
+                "source": "github_data_branch",
                 "source_url": fetch_url,
                 "path": remote_path,
                 "content": content,
             }
     except urllib.error.HTTPError as e:
-        # Fallback: check if ledger exists
         return {
             "success": False,
             "status_code": e.code,
-            "error": f"Not found at {fetch_url} (HTTP {e.code}). Note: run might still be processing or file name differs.",
-            "hint": f"Check status or fetch ledger: vpr_fetch_verified_markdown('ledger.json')",
+            "error": f"Not found at {fetch_url} (HTTP {e.code}).",
+            "hint": "Check status or fetch ledger: vpr_fetch_verified_markdown('ledger.json')",
         }
     except Exception as e:
         return {"success": False, "error": f"Error fetching {fetch_url}: {e}"}
 
 
+def run_local_pipeline(urls: List[str], expected_title: str = "") -> Dict[str, Any]:
+    """Helper to crawl, validate, and convert papers locally to Markdown."""
+    default_data = "/app/data" if os.path.exists("/app") and os.access("/app", os.W_OK) else os.path.expanduser("~/.vpr/data")
+    data_dir = os.environ.get("DATA_DIR", default_data)
+    md_dir = os.path.join(data_dir, "markdown")
+    tmp_dir = os.path.join(data_dir, "temp")
+    os.makedirs(md_dir, exist_ok=True)
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    results: List[Dict[str, Any]] = []
+
+    for idx, raw_url in enumerate(urls, 1):
+        url = raw_url.strip()
+        if not url:
+            continue
+        if re.match(r"^\d{4}\.\d{4,5}(v\d+)?$", url):
+            url = f"https://arxiv.org/pdf/{url}.pdf"
+        elif "arxiv.org/abs/" in url:
+            url = url.replace("arxiv.org/abs/", "arxiv.org/pdf/") + ".pdf"
+
+        tmp_pdf = os.path.join(tmp_dir, f"crawl_{int(time.time())}_{idx}.pdf")
+        md_file = f"paper_local_{idx}.md"
+        md_path = os.path.join(md_dir, md_file)
+
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        download_ok = False
+        try:
+            with urllib.request.urlopen(req, timeout=40) as resp:
+                data = resp.read()
+                if data[:4] == b"%PDF":
+                    with open(tmp_pdf, "wb") as f:
+                        f.write(data)
+                    download_ok = True
+        except Exception as e:
+            results.append({
+                "url": url,
+                "status": "gagal_unduh",
+                "reason": f"Download failed: {e}",
+            })
+            continue
+
+        if not download_ok:
+            results.append({
+                "url": url,
+                "status": "bukan_pdf",
+                "reason": "Downloaded stream did not begin with %PDF header",
+            })
+            continue
+
+        # Validate & Extract Text
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(tmp_pdf)
+            page_count = len(reader.pages)
+            extracted_pages: List[str] = []
+            full_text = ""
+
+            for p_num, page in enumerate(reader.pages, 1):
+                txt = page.extract_text() or ""
+                full_text += f"\n{txt}"
+                extracted_pages.append(f"## Page {p_num}\n\n{txt.strip()}\n")
+
+            if len(full_text.strip()) < 2000:
+                results.append({
+                    "url": url,
+                    "status": "tidak_terbaca",
+                    "reason": "Text extracted < 2000 characters (scanned or protected)",
+                })
+                continue
+
+            if expected_title:
+                norm = lambda s: re.sub(r"[^a-z0-9 ]", "", s.lower())
+                words = norm(expected_title).split()
+                first_page = norm(reader.pages[0].extract_text() or "")
+                hits = sum(1 for w in words if w in first_page)
+                if words and (hits / len(words)) < 0.5:
+                    results.append({
+                        "url": url,
+                        "status": "judul_tidak_cocok",
+                        "reason": f"Title overlap < 50% for '{expected_title}'",
+                    })
+                    continue
+
+            # Save clean markdown
+            md_content = f"# Verified Paper {idx}\nSource: {url}\nPages: {page_count}\n\n" + "\n".join(extracted_pages)
+            with open(md_path, "w", encoding="utf-8") as f:
+                f.write(md_content)
+
+            results.append({
+                "url": url,
+                "status": "valid",
+                "pages": page_count,
+                "markdown_file": md_file,
+                "markdown_path": md_path,
+                "preview": md_content[:500] + "...",
+            })
+        except Exception as e:
+            results.append({
+                "url": url,
+                "status": "error_ekstraksi",
+                "reason": str(e),
+            })
+        finally:
+            # Zero binary retention: remove raw PDF
+            if os.path.exists(tmp_pdf):
+                try:
+                    os.remove(tmp_pdf)
+                except Exception:
+                    pass
+
+    return {
+        "success": True,
+        "mode": "free_mcp_local",
+        "processed_count": len(results),
+        "results": results,
+    }
+
+
+def tool_local_research(query: str, max_papers: int = 3) -> Dict[str, Any]:
+    """
+    Search and immediately crawl, validate, and convert papers locally.
+    Enforces the 3x per 90s rate limiter.
+    """
+    limit_check = check_rate_limit()
+    if limit_check:
+        return limit_check
+
+    search_res = tool_search_candidates(query, max_results=max_papers)
+    candidates = search_res.get("candidates", [])
+    if not candidates:
+        return {
+            "success": False,
+            "error": search_res.get("error", "No candidate papers found for query"),
+            "query": query,
+        }
+
+    urls = [c["pdf_url"] for c in candidates if c.get("pdf_url")]
+    first_title = candidates[0].get("title", "") if candidates else ""
+    pipeline_res = run_local_pipeline(urls, expected_title="")
+    pipeline_res["query"] = query
+    pipeline_res["candidates_searched"] = len(candidates)
+    return pipeline_res
+
+
 TOOLS = [
     {
         "name": "vpr_search_candidates",
-        "description": "Search open-access academic papers via arXiv API to get candidates before verification.",
+        "description": "Search open-access academic papers via arXiv API. Enforces rate-limiting: max 3 calls per 90s.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -230,7 +430,7 @@ TOOLS = [
     },
     {
         "name": "vpr_trigger_sandbox",
-        "description": "Trigger GitHub Actions sandbox on maryam0508/vpr-claude-skill to download, 4-stage validate, and convert papers to clean Markdown.",
+        "description": "Trigger PDF verification & conversion. Free MCP Mode automatically runs local conversion when GITHUB_TOKEN is omitted.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -249,7 +449,7 @@ TOOLS = [
     },
     {
         "name": "vpr_fetch_verified_markdown",
-        "description": "Fetch verified clean Markdown text or ledger status from the repository 'data' branch.",
+        "description": "Fetch verified clean Markdown text or ledger status from local storage or GitHub 'data' branch.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -259,6 +459,25 @@ TOOLS = [
                 }
             },
             "required": ["paper_id_or_url"],
+        },
+    },
+    {
+        "name": "vpr_local_research",
+        "description": "All-in-one local pipeline: search arXiv, download PDF, validate 4 stages, and convert to clean Markdown without requiring external tokens. Rate limited to 3x per 90s.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Research question or scientific topic to search and extract",
+                },
+                "max_papers": {
+                    "type": "integer",
+                    "description": "Number of top candidates to validate and convert (default: 3, max: 5)",
+                    "default": 3,
+                },
+            },
+            "required": ["query"],
         },
     },
 ]
@@ -312,6 +531,10 @@ def handle_request(req: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         elif tool_name == "vpr_fetch_verified_markdown":
             target = args.get("paper_id_or_url", "")
             res = tool_fetch_verified_markdown(target)
+        elif tool_name == "vpr_local_research":
+            q = args.get("query", "")
+            max_p = args.get("max_papers", 3)
+            res = tool_local_research(q, max_p)
         else:
             return {
                 "jsonrpc": "2.0",
