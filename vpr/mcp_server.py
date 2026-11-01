@@ -8,9 +8,11 @@ Provides tools:
 4. vpr_local_research(query, max_papers): Local crawling, validation, and markdown conversion (Docker/local).
 """
 
+import ipaddress
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.parse
@@ -19,18 +21,21 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
 SERVER_NAME = "vpr-mcp-server"
-SERVER_VERSION = "1.0.1"
+SERVER_VERSION = "1.0.2"
 PROTOCOL_VERSION = "2024-11-05"
 
 DEFAULT_REPO = "maryam0508/vpr-claude-skill"
 WORKFLOW_FILE = "vpr-sandbox.yml"
 RAW_DATA_BASE_URL = f"https://raw.githubusercontent.com/{DEFAULT_REPO}/data"
-USER_AGENT = "VPR-MCPServer/1.0.1 (+https://github.com/maryam0508/vpr-claude-skill)"
+USER_AGENT = "VPR-MCPServer/1.0.2 (+https://github.com/maryam0508/vpr-claude-skill)"
+
+# SSRF Protection: Whitelisted domains only
+ALLOWED_HOSTS = {"arxiv.org", "export.arxiv.org"}
 
 # Rate Limiter: Max 3 crawling/search requests per 90 seconds (1.5 min)
 RATE_LIMIT_MAX_REQUESTS = 3
 RATE_LIMIT_WINDOW_SECONDS = 90.0
-_request_timestamps: List[float] = []
+RATE_LIMIT_FILE = os.path.expanduser("~/.vpr/ratelimit.json")
 
 
 def log(msg: str) -> None:
@@ -38,15 +43,69 @@ def log(msg: str) -> None:
     sys.stderr.flush()
 
 
+def is_safe_url(u: str) -> bool:
+    """Validate URL protocol, hostname against ALLOWED_HOSTS, and block private/loopback/link_local IPs."""
+    try:
+        parsed = urllib.parse.urlparse(u.strip())
+        if parsed.scheme not in ("http", "https"):
+            return False
+        hostname = (parsed.hostname or "").lower()
+        if not hostname or hostname not in ALLOWED_HOSTS:
+            return False
+
+        # Resolve IP and enforce public IP checks
+        addr_info = socket.getaddrinfo(hostname, None)
+        for item in addr_info:
+            ip_str = item[4][0]
+            ip = ipaddress.ip_address(ip_str)
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_reserved
+                or ip.is_unspecified
+            ):
+                return False
+        return True
+    except Exception as e:
+        log(f"SSRF check error for {u}: {e}")
+        return False
+
+
+def _read_persistent_timestamps() -> List[float]:
+    try:
+        if os.path.exists(RATE_LIMIT_FILE):
+            with open(RATE_LIMIT_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return [float(x) for x in data]
+                if isinstance(data, dict) and "timestamps" in data:
+                    return [float(x) for x in data["timestamps"]]
+    except Exception as e:
+        log(f"Failed to read ratelimit file: {e}")
+    return []
+
+
+def _write_persistent_timestamps(timestamps: List[float]) -> None:
+    try:
+        os.makedirs(os.path.dirname(RATE_LIMIT_FILE), exist_ok=True)
+        tmp_file = f"{RATE_LIMIT_FILE}.tmp.{os.getpid()}"
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(timestamps, f)
+        os.replace(tmp_file, RATE_LIMIT_FILE)
+    except Exception as e:
+        log(f"Failed to write ratelimit file: {e}")
+
+
 def check_rate_limit() -> Optional[Dict[str, Any]]:
-    """Enforce maximum 3 crawling/search requests within 90 seconds (1.5 minutes)."""
+    """Enforce max 3 requests within 90s using ~/.vpr/ratelimit.json."""
     now = time.time()
     cutoff = now - RATE_LIMIT_WINDOW_SECONDS
-    global _request_timestamps
-    _request_timestamps = [t for t in _request_timestamps if t > cutoff]
+    timestamps = [t for t in _read_persistent_timestamps() if t > cutoff]
 
-    if len(_request_timestamps) >= RATE_LIMIT_MAX_REQUESTS:
-        earliest = _request_timestamps[0]
+    if len(timestamps) >= RATE_LIMIT_MAX_REQUESTS:
+        earliest = timestamps[0]
         retry_after = int(RATE_LIMIT_WINDOW_SECONDS - (now - earliest)) + 1
         return {
             "status": "rate_limited",
@@ -54,7 +113,9 @@ def check_rate_limit() -> Optional[Dict[str, Any]]:
             "retry_after_seconds": max(1, retry_after),
             "window_seconds": int(RATE_LIMIT_WINDOW_SECONDS),
         }
-    _request_timestamps.append(now)
+
+    timestamps.append(now)
+    _write_persistent_timestamps(timestamps)
     return None
 
 
@@ -67,6 +128,9 @@ def tool_search_candidates(query: str, max_results: int = 5) -> Dict[str, Any]:
     max_res = max(1, min(int(max_results), 10))
     encoded_query = urllib.parse.quote(query.strip())
     url = f"https://export.arxiv.org/api/query?search_query=all:{encoded_query}&start=0&max_results={max_res}&sortBy=relevance&sortOrder=descending"
+
+    if not is_safe_url(url):
+        return {"error": f"Target URL failed SSRF validation: {url}", "candidates": []}
 
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
@@ -133,7 +197,7 @@ def tool_trigger_sandbox(paper_urls: str, expected_title: str = "") -> Dict[str,
     """
     github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 
-    # Free MCP Mode: if token is absent, run local research directly
+    # Free MCP Mode: if token is absent, run local pipeline directly
     if not github_token:
         log("GITHUB_TOKEN not detected. Executing in Free MCP Mode (local pipeline).")
         urls = [u.strip() for u in re.split(r"[\n,]+", paper_urls.strip()) if u.strip()]
@@ -185,7 +249,7 @@ def tool_trigger_sandbox(paper_urls: str, expected_title: str = "") -> Dict[str,
 
 
 def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
-    """Fetch verified markdown or ledger from local storage first, then GitHub branch 'data'."""
+    """Fetch verified markdown or ledger from local storage first, then GitHub branch 'data' if opt-in."""
     target = paper_id_or_url.strip()
     target_clean = os.path.basename(target)
     default_data = "/app/data" if os.path.exists("/app") and os.access("/app", os.W_OK) else os.path.expanduser("~/.vpr/data")
@@ -212,7 +276,13 @@ def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
             except Exception as e:
                 log(f"Error reading local file {lp}: {e}")
 
-    # 2. Remote check via GitHub 'data' branch
+    # 2. Remote check via GitHub 'data' branch (Opt-in only via VPR_ALLOW_REMOTE=1)
+    if os.environ.get("VPR_ALLOW_REMOTE") != "1":
+        return {
+            "success": False,
+            "error": "Remote fetch disabled. Set VPR_ALLOW_REMOTE=1 untuk mengaktifkan",
+        }
+
     if target_clean in ("ledger.json", "extracted_papers.json"):
         remote_path = f"latest/{target_clean}"
     elif target_clean.endswith(".md"):
@@ -232,6 +302,7 @@ def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
                             return {
                                 "success": True,
                                 "source": "github_data_branch",
+                                "trust": "untrusted_remote",
                                 "matched_paper": p.get("title"),
                                 "url": p.get("url"),
                                 "content_markdown": p.get("content_markdown"),
@@ -249,6 +320,7 @@ def tool_fetch_verified_markdown(paper_id_or_url: str) -> Dict[str, Any]:
             return {
                 "success": True,
                 "source": "github_data_branch",
+                "trust": "untrusted_remote",
                 "source_url": fetch_url,
                 "path": remote_path,
                 "content": content,
@@ -284,6 +356,14 @@ def run_local_pipeline(urls: List[str], expected_title: str = "") -> Dict[str, A
         elif "arxiv.org/abs/" in url:
             url = url.replace("arxiv.org/abs/", "arxiv.org/pdf/") + ".pdf"
 
+        if not is_safe_url(url):
+            results.append({
+                "url": url,
+                "status": "ssrf_blocked",
+                "reason": "URL not allowed or host unverified",
+            })
+            continue
+
         tmp_pdf = os.path.join(tmp_dir, f"crawl_{int(time.time())}_{idx}.pdf")
         md_file = f"paper_local_{idx}.md"
         md_path = os.path.join(md_dir, md_file)
@@ -292,6 +372,14 @@ def run_local_pipeline(urls: List[str], expected_title: str = "") -> Dict[str, A
         download_ok = False
         try:
             with urllib.request.urlopen(req, timeout=40) as resp:
+                final_url = resp.geturl()
+                if not is_safe_url(final_url):
+                    results.append({
+                        "url": url,
+                        "status": "ssrf_redirect_blocked",
+                        "reason": f"Redirected to unsafe URL: {final_url}",
+                    })
+                    continue
                 data = resp.read()
                 if data[:4] == b"%PDF":
                     with open(tmp_pdf, "wb") as f:
@@ -339,11 +427,11 @@ def run_local_pipeline(urls: List[str], expected_title: str = "") -> Dict[str, A
                 words = norm(expected_title).split()
                 first_page = norm(reader.pages[0].extract_text() or "")
                 hits = sum(1 for w in words if w in first_page)
-                if words and (hits / len(words)) < 0.5:
+                if words and (hits / len(words)) < 0.6:
                     results.append({
                         "url": url,
                         "status": "judul_tidak_cocok",
-                        "reason": f"Title overlap < 50% for '{expected_title}'",
+                        "reason": f"Title overlap < 60% for '{expected_title}'",
                     })
                     continue
 
@@ -401,7 +489,6 @@ def tool_local_research(query: str, max_papers: int = 3) -> Dict[str, Any]:
         }
 
     urls = [c["pdf_url"] for c in candidates if c.get("pdf_url")]
-    first_title = candidates[0].get("title", "") if candidates else ""
     pipeline_res = run_local_pipeline(urls, expected_title="")
     pipeline_res["query"] = query
     pipeline_res["candidates_searched"] = len(candidates)
@@ -449,7 +536,7 @@ TOOLS = [
     },
     {
         "name": "vpr_fetch_verified_markdown",
-        "description": "Fetch verified clean Markdown text or ledger status from local storage or GitHub 'data' branch.",
+        "description": "Fetch verified clean Markdown text or ledger status from local storage or GitHub 'data' branch (requires VPR_ALLOW_REMOTE=1 for remote).",
         "inputSchema": {
             "type": "object",
             "properties": {
